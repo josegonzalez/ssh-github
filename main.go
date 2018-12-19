@@ -26,7 +26,7 @@ var (
 	IdleTimeout     = 10 * time.Minute
 	Port            = getenv("SSHG_PORT", "2222")
 	SshEntrypoint   = getenv("SSHG_ENTRYPOINT", "/bin/bash")
-	SshGroupID      = os.Getenv("SSHG_GROUP_ID")
+	SshGroupIds     = os.Getenv("SSHG_GROUP_IDS")
 	SshUserID       = os.Getenv("SSHG_USER_ID")
 )
 
@@ -85,19 +85,30 @@ func sshHandler(s ssh.Session) {
 	}
 
 	cmd := exec.Command(SshEntrypoint)
-	if SshGroupID != "" && SshUserID != "" {
-		gid, err := strconv.ParseUint(SshGroupID, 10, 32)
-		if err != nil {
-			return
+	if SshGroupIds != "" && SshUserID != "" {
+		var gid uint32
+		var groups []uint32
+		for i, groupID := range strings.Split(SshGroupIds, ",") {
+			ui, err := strconv.ParseUint(groupID, 10, 32)
+			if err != nil {
+				return
+			}
+
+			if i == 0 {
+				gid = uint32(ui)
+			} else {
+				groups = append(groups, uint32(ui))
+			}
 		}
 
 		uid, err := strconv.ParseUint(SshUserID, 10, 32)
 		if err != nil {
 			return
 		}
+		credential := &syscall.Credential{Uid: uint32(uid), Gid: gid, Groups: groups}
 
 		cmd.SysProcAttr = &syscall.SysProcAttr{}
-		cmd.SysProcAttr.Credential = &syscall.Credential{Uid: uint32(uid), Gid: uint32(gid)}
+		cmd.SysProcAttr.Credential = credential
 	}
 
 	ptyReq, winCh, isPty := s.Pty()
@@ -136,10 +147,6 @@ func fetchHostSigners(hostKeyFile string) (signers []ssh.Signer, err error) {
 	}
 
 	for _, line := range strings.Split(HostKeyFile, ":") {
-		if line == "" {
-			continue
-		}
-
 		log.Println(fmt.Sprintf("parsing hostkey '%s'", line))
 		pemBytes, errReadFile := ioutil.ReadFile(line)
 		if errReadFile != nil {
@@ -158,7 +165,7 @@ func fetchHostSigners(hostKeyFile string) (signers []ssh.Signer, err error) {
 
 func main() {
 	if GithubUser == "" {
-		log.Println("no GITHUB_USER specified")
+		log.Println("no SSHG_GITHUB_USER specified")
 		os.Exit(1)
 	}
 

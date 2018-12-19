@@ -49,11 +49,20 @@ export SSHG_ENTRYPOINT=/usr/local/bin/fish
 ./ssh-github
 ```
 
-By default, the entrypoint will be executed as the `user:group` that invokes `ssh-github`. This may be overriden via the `SSHG_USER_ID` and `SSHG_GROUP_ID` environment variables:
+By default, the entrypoint will be executed as the `user:group` that invokes `ssh-github`. This may be overriden via the `SSHG_USER_ID` and `SSHG_GROUP_IDS` environment variables:
 
 ```shell
 export GITHUB_USER=josegonzalez
-export SSHG_GROUP_ID=20
+export SSHG_GROUP_IDS=20
+export SSHG_USER_ID=501
+./ssh-github
+```
+
+You may also specify multiple groups via a comma-delimited list. The first group id is the primary group.
+
+```shell
+export GITHUB_USER=josegonzalez
+export SSHG_GROUP_IDS=20,12,80
 export SSHG_USER_ID=501
 ./ssh-github
 ```
