@@ -1,7 +1,7 @@
 GH_USER ?= josegonzalez
 NAME = ssh-github
 HARDWARE = $(shell uname -m)
-VERSION ?= 0.4.0
+VERSION ?= 0.5.0
 
 build: clean ssh-github
 	mkdir -p build/linux  && GOOS=linux  go build -a -o build/linux/$(NAME)
