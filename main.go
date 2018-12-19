@@ -20,14 +20,14 @@ import (
 )
 
 var (
-	CheckGithubUser = toBool(getenv("CHECK_GITHUB_USER", "false"))
-	GithubUser      = os.Getenv("GITHUB_USER")
-	HostKeyFile     = os.Getenv("HOST_KEY_FILE")
+	CheckGithubUser = toBool(getenv("SSHG_CHECK_GITHUB_USER", "false"))
+	GithubUser      = os.Getenv("SSHG_GITHUB_USER")
+	HostKeyFile     = os.Getenv("SSHG_HOST_KEY_FILE")
 	IdleTimeout     = 10 * time.Minute
-	Port            = getenv("PORT", "2222")
-	SshEntrypoint   = getenv("SSH_ENTRYPOINT", "/bin/bash")
-	SshGroupID      = os.Getenv("SSH_GROUP_ID")
-	SshUserID       = os.Getenv("SSH_USER_ID")
+	Port            = getenv("SSHG_PORT", "2222")
+	SshEntrypoint   = getenv("SSHG_ENTRYPOINT", "/bin/bash")
+	SshGroupID      = os.Getenv("SSHG_GROUP_ID")
+	SshUserID       = os.Getenv("SSHG_USER_ID")
 )
 
 func fetchGithubKeys(user string) (publicKeys []ssh.PublicKey, err error) {
