@@ -56,3 +56,11 @@ export GITHUB_USER=josegonzalez
 export HOST_KEY_FILE="/path/to/host/key"
 ./ssh-github
 ```
+
+You may specify multiple host key files by delimiting them via a `:` character.
+
+```shell
+export GITHUB_USER=josegonzalez
+export HOST_KEY_FILE="/path/to/host/key:/path/to/another/host/key"
+./ssh-github
+```

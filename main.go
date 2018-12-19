@@ -15,6 +15,7 @@ import (
 
 	"github.com/gliderlabs/ssh"
 	"github.com/kr/pty"
+	gossh "golang.org/x/crypto/ssh"
 )
 
 var (
@@ -110,33 +111,62 @@ func validSshEntrypoint(sshEntrypoint string) bool {
 	return true
 }
 
+func fetchHostSigners(hostKeyFile string) (signers []ssh.Signer, err error) {
+	if HostKeyFile == "" {
+		return
+	}
+
+	for _, line := range strings.Split(HostKeyFile, ":") {
+		if line == "" {
+			continue
+		}
+
+		log.Println(fmt.Sprintf("parsing hostkey '%s'", line))
+		pemBytes, errReadFile := ioutil.ReadFile(line)
+		if errReadFile != nil {
+			return signers, errReadFile
+		}
+
+		signer, errParse := gossh.ParsePrivateKey(pemBytes)
+		if errParse != nil {
+			return signers, errParse
+		}
+		signers = append(signers, signer)
+	}
+
+	return
+}
+
 func main() {
 	if GithubUser == "" {
-		log.Println("No GITHUB_USER specified")
+		log.Println("no GITHUB_USER specified")
 		os.Exit(1)
 	}
 
 	if !validSshEntrypoint(SshEntrypoint) {
-		log.Println("Invalid SSH Entrypoint")
+		log.Println("invalid SSH Entrypoint")
 		os.Exit(1)
 	}
 
 	log.Println(fmt.Sprintf("fetching github ssh keys for %s", GithubUser))
 	allowedPublicKeys, err := fetchGithubKeys(GithubUser)
 	if err != nil {
-		log.Println(fmt.Printf("%s", err))
+		log.Println(err)
 		os.Exit(1)
 	}
 
 	serverAddress := fmt.Sprintf(":%s", Port)
-	log.Println(fmt.Sprintf("starting %s ssh server on %s", SshEntrypoint, serverAddress))
 
-	if HostKeyFile != "" {
-		ssh.HostKeyFile(HostKeyFile)
+	signers, err := fetchHostSigners(HostKeyFile)
+	if err != nil {
+		log.Println(err)
+		os.Exit(1)
 	}
+
 	server := &ssh.Server{
 		Addr:        serverAddress,
 		Handler:     sshHandler,
+		HostSigners: signers,
 		IdleTimeout: IdleTimeout,
 		PublicKeyHandler: func(ctx ssh.Context, key ssh.PublicKey) bool {
 			for _, allowed := range allowedPublicKeys {
@@ -147,5 +177,7 @@ func main() {
 			return false
 		},
 	}
+
+	log.Println(fmt.Sprintf("starting %s ssh server on %s", SshEntrypoint, serverAddress))
 	log.Fatal(server.ListenAndServe())
 }
