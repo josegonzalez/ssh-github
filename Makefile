@@ -10,7 +10,7 @@ build: clean ssh-github
 clean:
 	rm -rf build/* ssh-github
 
-run: build
+run: ssh-github
 	./ssh-github
 
 ssh-github:
