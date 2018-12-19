@@ -49,6 +49,15 @@ export SSH_ENTRYPOINT=/usr/local/bin/fish
 ./ssh-github
 ```
 
+By default, the entrypoint will be executed as the `user:group` that invokes `ssh-github`. This may be overriden via the `SSH_USER_ID` and `SSH_GROUP_ID` environment variables:
+
+```shell
+export GITHUB_USER=josegonzalez
+export SSH_GROUP_ID=20
+export SSH_USER_ID=501
+./ssh-github
+```
+
 Every invocation of the server starts with a new host key. You may specify the path to a host key via the `HOST_KEY_FILE` environment variable.
 
 ```shell

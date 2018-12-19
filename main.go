@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -20,11 +21,13 @@ import (
 
 var (
 	CheckGithubUser = toBool(getenv("CHECK_GITHUB_USER", "false"))
-	SshEntrypoint   = getenv("SSH_ENTRYPOINT", "/bin/bash")
 	GithubUser      = os.Getenv("GITHUB_USER")
+	HostKeyFile     = os.Getenv("HOST_KEY_FILE")
 	IdleTimeout     = 10 * time.Minute
 	Port            = getenv("PORT", "2222")
-	HostKeyFile     = os.Getenv("HOST_KEY_FILE")
+	SshEntrypoint   = getenv("SSH_ENTRYPOINT", "/bin/bash")
+	SshGroupID      = os.Getenv("SSH_GROUP_ID")
+	SshUserID       = os.Getenv("SSH_USER_ID")
 )
 
 func fetchGithubKeys(user string) (publicKeys []ssh.PublicKey, err error) {
@@ -82,9 +85,25 @@ func sshHandler(s ssh.Session) {
 	}
 
 	cmd := exec.Command(SshEntrypoint)
+	if SshGroupID != "" && SshUserID != "" {
+		gid, err := strconv.ParseUint(SshGroupID, 10, 32)
+		if err != nil {
+			return
+		}
+
+		uid, err := strconv.ParseUint(SshUserID, 10, 32)
+		if err != nil {
+			return
+		}
+
+		cmd.SysProcAttr = &syscall.SysProcAttr{}
+		cmd.SysProcAttr.Credential = &syscall.Credential{Uid: uint32(uid), Gid: uint32(gid)}
+	}
+
 	ptyReq, winCh, isPty := s.Pty()
 	if isPty {
 		cmd.Env = append(cmd.Env, fmt.Sprintf("TERM=%s", ptyReq.Term))
+
 		f, err := pty.Start(cmd)
 		if err != nil {
 			panic(err)
